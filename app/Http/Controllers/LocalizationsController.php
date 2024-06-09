@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class ExpressionsController extends Controller
+class LocalizationsController extends Controller
 {
 
     private function stringToList($input) {
@@ -23,23 +23,20 @@ class ExpressionsController extends Controller
         $tissues = $request->input('tissues');
         $cellTypes = $request->input('cellTypes');
         $species = $request->input('species');
-        $tpm = $request->input('tpm');
 
         $geneList =  $this->stringToList($geneNames);
         $tissuesList =  $this->stringToList($tissues);
         $cellTypesList =  $this->stringToList($cellTypes);
         $speciesList =  $this->stringToList($species);
-        $tpmList =  $this->stringToList($tpm);
 
         $filters = [
             'gene_name' => $geneList,
             'tissue' => $tissuesList,
             'cell_type' => $cellTypesList,
             'species' => $speciesList,
-            'tpm' => $tpmList,
         ];
 
-        $expressions = DB::table('expressions');
+        $expressions = DB::table('localizations');
 
         foreach ($filters as $column => $values) {
             if (!empty($values)) {

@@ -148,7 +148,8 @@ class InteractionController extends Controller
                         "journal" => $item["journal"] ,
                         "pmid" => $item["pmid"] ,
                         "email_contact" => $item["email_contact"] ,
-
+                        "abbreviation" => $item["abbreviation"], 
+                        "throughput" => $item["throughput"],
                         "tissue" => $item['tissue'],
                         "cell_type" => $item['cell_type'],
                         "category" => $item['category'],
@@ -157,7 +158,6 @@ class InteractionController extends Controller
                         "experiment" => $item['experiment'],
                         "key" => $key,
                         "binding_sites" => []
-
                     ];
                 }
                 unset(
@@ -167,7 +167,8 @@ class InteractionController extends Controller
                     $item["journal"],
                     $item["pmid"],
                     $item["email_contact"],
-
+                    $item["abbreviation"], 
+                    $item["throughput"],
                     $item['tissue'],
                     $item['cell_type'],
                     $item['category'],

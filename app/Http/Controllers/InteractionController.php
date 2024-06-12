@@ -7,14 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class InteractionController extends Controller
 {
-    //
-    private function stringToList($input) {
-        if (empty($input)) {
-            return [];
-        } else {
-            return explode(',', $input);
-        }
-    }
 
     public function show(Request $request)
     {
@@ -74,8 +66,46 @@ class InteractionController extends Controller
             }
         }
         $interactions = $interactions->get();
-
         
+
+        $unique_tissues = array();
+        $unique_experiments = array();
+        $unique_exp_low = array();
+        $unique_exp_high = array();
+        $unique_cell_lines = array();
+        $unique_tissues = array();
+        $unique_publication = array();
+        $throughput_counts = array(
+            't' => 0,
+            'f' => 0,
+        );
+        foreach ($interactions as $item) {
+            $item = (array) $item;
+
+            if ($item['tissue'] !== 'NA') {
+                $unique_tissues[$item['tissue']] = true;
+            }
+            if ($item['throughput'] === 't') {
+                $throughput_counts['t']++;
+            } elseif ($item['throughput'] === 'f') {
+                $throughput_counts['f']++;
+            }
+            $unique_experiments[$item['experiment']] = true;
+            $unique_exp_low[$item['tissue']] = true;
+            $unique_exp_high[$item['tissue']] = true;
+            $unique_cell_lines[$item['cell_type']] = true;
+            $unique_publication[$item['pmid']] = true;
+
+        }
+
+        $num_of_unique_tissues = count($unique_tissues);
+        $num_of_experiments = count($unique_experiments);
+        $num_of_exp_low = count($unique_exp_low);
+        $num_of_exp_high = count($unique_exp_high);
+        $num_of_cell_lines = count($unique_cell_lines);
+        $num_of_tissues = count($unique_tissues);
+        $num_of_publication = count($unique_publication);
+
         // Initialize the result array
         $result = [];
         // Process the input array to group by mirna_name and gene_name
@@ -195,12 +225,21 @@ class InteractionController extends Controller
         }
 
 
-
+        $response_object = [
+            'interactions' => $result,
+            'num_of_interactions' => count($result),
+            'num_of_experiments' => $num_of_experiments,
+            'num_of_exp_low' => $throughput_counts['f'],
+            'num_of_exp_high' => $throughput_counts['t'],
+            'num_of_cell_lines' => $num_of_cell_lines,
+            'num_of_tissues' => $num_of_unique_tissues,
+            'num_of_publication' => $num_of_publication,
+        ];
         // // Assuming you want to return JSON of the first interaction, if exists
         if (!empty($result)) {
-            return response()->json($result, 200);
+            return response()->json($response_object, 200);
         } else {
-            return response()->json($result, 200);
+            return response()->json($response_object, 200);
         }
     }
     

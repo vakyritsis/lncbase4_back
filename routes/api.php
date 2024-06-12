@@ -8,7 +8,8 @@ use App\Http\Controllers\ExpressionsController;
 use App\Http\Controllers\LocalizationsController;
 
 
-Route::get('/LncBaseV4/interactions', [InteractionController::class, 'show']);
+Route::get('/LncBaseV4/interactions/keyword', [InteractionController::class, 'show']);
+Route::get('/LncBaseV4/interactions/keyword', [InteractionController::class, 'show']);
 Route::get('/LncBaseV4/expressions', [ExpressionsController::class, 'show']);
 Route::get('/LncBaseV4/localizations', [LocalizationsController::class, 'show']);
-Route::get('/LncBaseV4/initialCall', [InitialCallController::class, 'getAll']);
+Route::get('/LncBaseV4/initial', [InitialCallController::class, 'getAll']);

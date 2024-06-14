@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class InteractionController extends Controller
 {
-
     public function showByKeyword(Request $request)
     {
 
@@ -67,149 +66,8 @@ class InteractionController extends Controller
         }
         $interactions = $interactions->get();
         
-        $uniqueExperiments = $interactions->unique('experiment');
+        $response_object = $this->groupInteractions($interactions);
 
-        $num_of_experiments = $interactions->unique('experiment')->count();
-        $num_of_exp_low =  $uniqueExperiments->where('throughput', 'f')->count();
-        $num_of_exp_high = $uniqueExperiments->where('throughput', 't')->count();
-        $num_of_cell_lines = $interactions->unique('cell_type')->count();
-        $num_of_publication = $interactions->unique('pmid')->count();
-        $num_of_tissues = $interactions->reject(
-            function ($value) {
-                return $value->tissue === 'NA';
-            })
-        ->unique('tissue')->count();
-
-        // Initialize the result array
-        $result = [];
-        // Process the input array to group by mirna_name and gene_name
-        foreach ($interactions as $item) {
-            // Convert object to associative array
-            $item = (array) $item;
-            
-            $key = $item['mirna_name'] . '_' . $item['gene_name'];
-            
-            if (!isset($result[$key])) {
-                $result[$key] = [
-                    "mirna_name" => $item['mirna_name'],
-                    "mimat" => $item['mimat'],
-                    "mature_confidence" => $item['mature_confidence'],
-                    "precursor_accession" => $item['precursor_accession'],
-                    "precursor_name" => $item['precursor_name'],
-                    "precursor_confidence" => $item['precursor_confidence'],
-                    "gene_name" => $item['gene_name'],
-                    "ensembl_gene_id" => $item['ensembl_gene_id'],
-                    "ensembl_transcript_id" => $item['ensembl_transcript_id'],
-                    "key" => $key,
-                    "publications" => []
-                ];
-            }
-            
-            // Remove mirna_name and gene_name from the current item
-            unset(  $item['mirna_name'],
-                    $item['mimat'],
-                    $item['mature_confidence'],
-                    $item['precursor_accession'],
-                    $item['precursor_name'],
-                    $item['precursor_confidence'],
-                    $item['gene_name'],
-                    $item['ensembl_gene_id'],
-                    $item['ensembl_transcript_id']
-            );
-            
-            // Add the rest of the fields to the entries list
-            $result[$key]['publications'][] = $item;
-
-            // Log::channel('errorlog')->info(($item));
-
-            // Log::channel('errorlog')->info("****************");
-
-        }
-        
-        // Reset array keys to ensure the result is indexed numerically
-        $result = array_values($result);
-
-        // Process the input array to group by title, tissue, and category
-        foreach ($result as &$items) {
-            $uniqueExperiments = array_unique(array_column($items["publications"], 'experiment'));
-            $items["unique_experiments_count"] = count($uniqueExperiments);
-            $groupedPublications = [];
-
-            foreach ($items["publications"] as $item) {
-                $item = (array) $item;
-
-                $key = $item['pmid']
-                . '_' . $item['tissue'] . '_' . $item['cell_type']. '_' . $item['category']
-                . '_' . $item['cell_line'] . '_' . $item['experimental_condition']. '_' . $item['experiment']
-
-                ;
-  
-                if (!isset($groupedPublications[$key])) {
-                    $groupedPublications[$key] = [
-                        "author_name" => $item['author_name'],
-                        "pub_year" => $item['pub_year'],
-                        "title" => $item["title"] ,
-                        "journal" => $item["journal"] ,
-                        "pmid" => $item["pmid"] ,
-                        "email_contact" => $item["email_contact"] ,
-                        "abbreviation" => $item["abbreviation"], 
-                        "throughput" => $item["throughput"],
-                        "tissue" => $item['tissue'],
-                        "cell_type" => $item['cell_type'],
-                        "category" => $item['category'],
-                        "cell_line" => $item['cell_line'],
-                        "experimental_condition" => $item['experimental_condition'],
-                        "experiment" => $item['experiment'],
-                        "key" => $key,
-                        "binding_sites" => []
-                    ];
-                }
-                unset(
-                    $item['author_name'],
-                    $item['pub_year'],
-                    $item["title"],
-                    $item["journal"],
-                    $item["pmid"],
-                    $item["email_contact"],
-                    $item["abbreviation"], 
-                    $item["throughput"],
-                    $item['tissue'],
-                    $item['cell_type'],
-                    $item['category'],
-                    $item['cell_line'],
-                    $item['experimental_condition'],
-                    // $item['experiment']
-                );
-                $groupedPublications[$key]['binding_sites'][] = $item;
-            }
-
-            
-            $items["publications"] = array_values($groupedPublications);
-
-
-            // Compute unique tissues count
-            $uniqueTissues = array_unique(array_column($items["publications"], 'tissue'));
-            $items["unique_tissues_count"] = count($uniqueTissues);
-
-            $uniqueCellTypes = array_unique(array_column($items["publications"], 'cell_type'));
-            $items["unique_cell_type_count"] = count($uniqueCellTypes);
-
-            $uniquePublications = array_unique(array_column($items["publications"], 'pmid'));
-            $items["unique_publications_count"] = count($uniquePublications);
-        }
-
-
-        $response_object = [
-            'interactions' => $result,
-            'num_of_interactions' => count($result),
-            'num_of_experiments' => $num_of_experiments,
-            'num_of_exp_low' => $num_of_exp_low,
-            'num_of_exp_high' => $num_of_exp_high,
-            'num_of_cell_lines' => $num_of_cell_lines,
-            'num_of_tissues' => $num_of_tissues,
-            'num_of_publication' => $num_of_publication,
-        ];
-        // // Assuming you want to return JSON of the first interaction, if exists
         if (!empty($result)) {
             return response()->json($response_object, 200);
         } else {
@@ -236,9 +94,6 @@ class InteractionController extends Controller
         $species = $request->input('species');
         $sources = $request->input('sources');
         $variants = $request->input('variants');
-
-
-        $searchString = 'chrX%';
 
         $tissuesList =  $this->stringToList($tissues);
         $cellTypesList =  $this->stringToList($cellTypes);
@@ -272,6 +127,7 @@ class InteractionController extends Controller
         $interactions = DB::table('norm_inter')
                 ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
                 ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
+                ->where('coordinates', 'like', "$chrName%")
                 ->where(function ($query) use ($start, $end) {
                     $query->whereBetween('coordinates_start', [$start, $end])
                           ->orWhereBetween('coordinates_end', [$start, $end])
@@ -288,7 +144,18 @@ class InteractionController extends Controller
         }
         $interactions = $interactions->get();
 
+        $response_object = $this->groupInteractions($interactions);
 
+        
+        if (!empty($result)) {
+            return response()->json($response_object, 200);
+        } else {
+            return response()->json($response_object, 200);
+        }
+    }
+
+
+    private function groupInteractions($interactions) {
         $uniqueExperiments = $interactions->unique('experiment');
 
         $num_of_experiments = $interactions->unique('experiment')->count();
@@ -302,9 +169,8 @@ class InteractionController extends Controller
             })
         ->unique('tissue')->count();
 
-        // Initialize the result array
         $result = [];
-        // Process the input array to group by mirna_name and gene_name
+
         foreach ($interactions as $item) {
             // Convert object to associative array
             $item = (array) $item;
@@ -327,7 +193,6 @@ class InteractionController extends Controller
                 ];
             }
             
-            // Remove mirna_name and gene_name from the current item
             unset(  $item['mirna_name'],
                     $item['mimat'],
                     $item['mature_confidence'],
@@ -339,19 +204,12 @@ class InteractionController extends Controller
                     $item['ensembl_transcript_id']
             );
             
-            // Add the rest of the fields to the entries list
             $result[$key]['publications'][] = $item;
-
-            // Log::channel('errorlog')->info(($item));
-
-            // Log::channel('errorlog')->info("****************");
 
         }
         
-        // Reset array keys to ensure the result is indexed numerically
         $result = array_values($result);
 
-        // Process the input array to group by title, tissue, and category
         foreach ($result as &$items) {
             $uniqueExperiments = array_unique(array_column($items["publications"], 'experiment'));
             $items["unique_experiments_count"] = count($uniqueExperiments);
@@ -400,7 +258,6 @@ class InteractionController extends Controller
                     $item['category'],
                     $item['cell_line'],
                     $item['experimental_condition'],
-                    // $item['experiment']
                 );
                 $groupedPublications[$key]['binding_sites'][] = $item;
             }
@@ -408,8 +265,7 @@ class InteractionController extends Controller
             
             $items["publications"] = array_values($groupedPublications);
 
-
-            // Compute unique tissues count
+            // Compute unique 
             $uniqueTissues = array_unique(array_column($items["publications"], 'tissue'));
             $items["unique_tissues_count"] = count($uniqueTissues);
 
@@ -431,11 +287,8 @@ class InteractionController extends Controller
             'num_of_tissues' => $num_of_tissues,
             'num_of_publication' => $num_of_publication,
         ];
-        // // Assuming you want to return JSON of the first interaction, if exists
-        if (!empty($result)) {
-            return response()->json($response_object, 200);
-        } else {
-            return response()->json($response_object, 200);
-        }
+
+        return $response_object;
     }
+
 }

@@ -56,8 +56,9 @@ class InteractionController extends Controller
 
         $interactions = DB::table('norm_inter')
                 ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-                ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id');
-
+                ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
+                ->join('methods', 'norm_inter.method_id', '=', 'methods.id')
+                ->leftjoin('mir_info', 'norm_inter.mir_info_id', '=', 'mir_info.id');
 
         foreach ($filters as $column => $values) {
             if (!empty($values)) {
@@ -65,7 +66,7 @@ class InteractionController extends Controller
             }
         }
         $interactions = $interactions->get();
-        
+
         $response_object = $this->groupInteractions($interactions);
 
         if (!empty($result)) {
@@ -111,7 +112,7 @@ class InteractionController extends Controller
 
             'tissue' => $tissuesList,
             'cell_type' => $cellTypesList,
-            'experiment' => $methodsList,
+            'method_name' => $methodsList,
             'type_of_experiment' => $validatedAsList,
             'type_of_interaction' => $validationTypeList,
             'mature_confidence' => $confLevelList,
@@ -127,6 +128,8 @@ class InteractionController extends Controller
         $interactions = DB::table('norm_inter')
                 ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
                 ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
+                ->join('methods', 'norm_inter.method_id', '=', 'methods.id')
+                ->join('mir_info', 'norm_inter.mir_info_id', '=', 'mir_info.id')
                 ->where('coordinates', 'like', "$chrName%")
                 ->where(function ($query) use ($start, $end) {
                     $query->whereBetween('coordinates_start', [$start, $end])
@@ -156,11 +159,11 @@ class InteractionController extends Controller
 
 
     private function groupInteractions($interactions) {
-        $uniqueExperiments = $interactions->unique('experiment');
+        $uniqueExperiments = $interactions->unique('method_name');
 
-        $num_of_experiments = $interactions->unique('experiment')->count();
-        $num_of_exp_low =  $uniqueExperiments->where('throughput', 'f')->count();
-        $num_of_exp_high = $uniqueExperiments->where('throughput', 't')->count();
+        $num_of_experiments = $interactions->unique('method_name')->count();
+        $num_of_exp_low =  $uniqueExperiments->where('highthroughput', 'f')->count();
+        $num_of_exp_high = $uniqueExperiments->where('highthroughput', 't')->count();
         $num_of_cell_lines = $interactions->unique('cell_type')->count();
         $num_of_publication = $interactions->unique('pmid')->count();
         $num_of_tissues = $interactions->reject(
@@ -211,7 +214,7 @@ class InteractionController extends Controller
         $result = array_values($result);
 
         foreach ($result as &$items) {
-            $uniqueExperiments = array_unique(array_column($items["publications"], 'experiment'));
+            $uniqueExperiments = array_unique(array_column($items["publications"], 'method_name'));
             $items["unique_experiments_count"] = count($uniqueExperiments);
             $groupedPublications = [];
 
@@ -220,7 +223,7 @@ class InteractionController extends Controller
 
                 $key = $item['pmid']
                 . '_' . $item['tissue'] . '_' . $item['cell_type']. '_' . $item['category']
-                . '_' . $item['cell_line'] . '_' . $item['experimental_condition']. '_' . $item['experiment']
+                . '_' . $item['cell_line'] . '_' . $item['experimental_condition']. '_' . $item['method_name']
 
                 ;
   
@@ -232,14 +235,14 @@ class InteractionController extends Controller
                         "journal" => $item["journal"] ,
                         "pmid" => $item["pmid"] ,
                         "email_contact" => $item["email_contact"] ,
-                        "abbreviation" => $item["abbreviation"], 
-                        "throughput" => $item["throughput"],
+                        "abr" => $item["abr"], 
+                        "highthroughput" => $item["highthroughput"],
                         "tissue" => $item['tissue'],
                         "cell_type" => $item['cell_type'],
                         "category" => $item['category'],
                         "cell_line" => $item['cell_line'],
                         "experimental_condition" => $item['experimental_condition'],
-                        "experiment" => $item['experiment'],
+                        "method_name" => $item['method_name'],
                         "key" => $key,
                         "binding_sites" => []
                     ];
@@ -251,8 +254,8 @@ class InteractionController extends Controller
                     $item["journal"],
                     $item["pmid"],
                     $item["email_contact"],
-                    $item["abbreviation"], 
-                    $item["throughput"],
+                    $item["abr"], 
+                    $item["highthroughput"],
                     $item['tissue'],
                     $item['cell_type'],
                     $item['category'],

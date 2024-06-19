@@ -14,146 +14,94 @@ class InitialCallController extends Controller
 
         /* Interactions Filters and unique values of miRNAs and lncRNAS */
 
-        $mirna_name_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('mirna_name')
-            ->distinct()
-            ->pluck('mirna_name');
-
-        $gene_name_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('gene_name')
-            ->distinct()
-            ->pluck('gene_name');
-
-        $tissue_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('tissue')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->tissue];
-            });
-
-        $cell_type_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('cell_type')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->cell_type];
-            });
-
-        $experiment_name_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('experiment')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->experiment];
-            });
+        $interactions = DB::table('norm_inter')
+            ->select(['gene_name', 'mirna_name', 'type_of_experiment', 'type_of_interaction', 'gene_biotype', 'species'])
+            ->get();
 
 
-        $type_of_experiment_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('type_of_experiment')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->type_of_experiment];
-            });
+        $tissues = DB::table('tissues')->select(['tissue', 'cell_type'])->get();
+
+        $experiment_name_unique = DB::table('methods')->select('method_name')->get()->filter()
+        ->map(function($tissue) {
+            return ['name' => $tissue->method_name];
+        });;
+
+        $mirna_name_unique = $interactions->pluck('mirna_name')->unique()->values();
+        $gene_name_unique = $interactions->pluck('gene_name')->unique()->values();
         
-        $type_of_interaction_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('type_of_interaction')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->type_of_interaction];
-            });
 
-        $mature_confidence_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('mature_confidence')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->mature_confidence];
-            });
+        $tissue_unique = $tissues->pluck('tissue')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
+    
+        $cell_type_unique = $tissues->pluck('cell_type')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
 
-        $gene_biotype_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('gene_biotype')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->gene_biotype];
-            });
-
-        $species_unique = DB::table('norm_inter')
-            ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-            ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-            ->select('species')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->species];
-            });
-
-        
-        // $sources_unique = DB::table('norm_inter')
-        //     ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
-        //     ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
-        //     ->select('sources')
-        //     ->distinct()
-        // ->get()
-        // ->map(function ($item) {
-        //     return ['name' => $item->sources];
+        // $type_of_experiment_unique = $interactions->pluck('type_of_experiment')->filter()->unique()->values()
+        // ->map(function($tissue) {
+        //     return ['name' => $tissue];
         // });
 
+        // $type_of_interaction_unique = $interactions->pluck('type_of_interaction')->filter()->unique()->values()
+        // ->map(function($tissue) {
+        //     return ['name' => $tissue];
+        // });
 
+        $mature_confidence_unique = [
+            ['name' => 'low'],
+            ['name' => 'high'],
+            ['name' => 'unknown']
+        ];
+
+        $type_of_experiment_unique = [
+            ['name' => 'DIRECT'],
+            ['name' => 'INDIRECT']
+        ];
+        $type_of_interaction_unique = [
+            ['name' => 'POSITIVE'],
+            ['name' => 'NEGATIVE'],
+        ];
+
+
+        $gene_biotype_unique = $interactions->pluck('gene_biotype')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
+
+        $species_unique = $interactions->pluck('species')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
+
+
+        // $sources_unique = $interactions->pluck('sources')->filter()->unique()->values()
+        // ->map(function($tissue) {
+        //     return ['name' => $tissue];
+        // });
 
         /*Expressions Filters */
+        $expressions = DB::table('expressions');
+        
+        $gene_name_unique_expressions = $expressions->pluck('gene_name')->unique()->values();
 
-        $gene_name_unique_expressions = DB::table('expressions')
-            ->select('gene_name')
-            ->whereNotNull('gene_name')
-            ->distinct()
-            ->pluck('gene_name');
-
-        $tissue_unique_expressions = DB::table('expressions')
-            ->select('tissue')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->tissue];
-            });
+        $tissue_unique_expressions = $expressions->pluck('tissue')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
 
 
-        $cell_type_unique_expressions = DB::table('expressions')
-            ->select('cell_type')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->cell_type];
-            });
+        $cell_type_unique_expressions = $expressions->pluck('cell_type')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
 
-        $species_unique_expressions = DB::table('expressions')
-            ->select('species')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->species];
-            });
+        $species_unique_expressions = $expressions->pluck('species')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
 
         $tpm_unique = [
             ['name' => 'Low'],
@@ -162,28 +110,20 @@ class InitialCallController extends Controller
         ];
 
         /*Localizations Filters */
+        $localizations = DB::table('localizations');
 
-        $gene_name_unique_localizations = DB::table('localizations')
-            ->select('gene_name')
-            ->whereNotNull('gene_name') 
-            ->distinct()
-            ->pluck('gene_name');
+        $gene_name_unique_localizations = $localizations->pluck('gene_name')->unique()->values();
 
-        $tissue_unique_localizations = DB::table('localizations')
-            ->select('tissue')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->tissue];
-            });
 
-        $cell_type_unique_localizations = DB::table('localizations')
-            ->select('cell_type')
-            ->distinct()
-            ->get()
-            ->map(function ($item) {
-                return ['name' => $item->cell_type];
-            });
+        $tissue_unique_localizations = $localizations->pluck('tissue')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
+
+        $cell_type_unique_localizations = $localizations->pluck('cell_type')->filter()->unique()->values()
+        ->map(function($tissue) {
+            return ['name' => $tissue];
+        });
 
         $response_object = [
             'interactions_info' => [

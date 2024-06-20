@@ -13,3 +13,6 @@ Route::get('/LncBaseV4/interactions/location', [InteractionController::class, 's
 Route::get('/LncBaseV4/expressions', [ExpressionsController::class, 'show']);
 Route::get('/LncBaseV4/localizations', [LocalizationsController::class, 'show']);
 Route::get('/LncBaseV4/initial', [InitialCallController::class, 'getAll']);
+Route::get('/LncBaseV4/testRoute', function () {
+    return 'Hello World';
+});

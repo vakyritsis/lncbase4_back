@@ -13,6 +13,11 @@ Route::get('/LncBaseV4/interactions/location', [InteractionController::class, 's
 Route::get('/LncBaseV4/expressions', [ExpressionsController::class, 'show']);
 Route::get('/LncBaseV4/localizations', [LocalizationsController::class, 'show']);
 Route::get('/LncBaseV4/initial', [InitialCallController::class, 'getAll']);
+Route::get('/LncBaseV4/initialtissues', [InitialCallController::class, 'get_tissues']);
+Route::get('/LncBaseV4/initialmethods', [InitialCallController::class, 'get_methods']);
+Route::get('/LncBaseV4/initialexpressions', [InitialCallController::class, 'get_expressions']);
+Route::get('/LncBaseV4/initiallocalizations', [InitialCallController::class, 'get_localizations']);
+Route::get('/LncBaseV4/initialinteractions', [InitialCallController::class, 'get_interactions']);
 Route::get('/LncBaseV4/testRoute', function () {
     return 'Hello World';
 });

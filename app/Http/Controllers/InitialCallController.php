@@ -138,7 +138,6 @@ class InitialCallController extends Controller
                 'gene_biotype_unique' => $gene_biotype_unique,
                 'species_unique' => $species_unique,
                 // 'sources_unique' => $sources_unique
-                'tpm_unique' => $tpm_unique,
             ],
             'expressions_info' => [
                 'gene_name_unique' => $gene_name_unique_expressions,
@@ -217,12 +216,19 @@ class InitialCallController extends Controller
             return ['name' => $tissue];
         });
 
+        $tpm_unique = [
+            ['name' => 'Low'],
+            ['name' => 'Medium'],
+            ['name' => 'High']
+        ];
+
         $response_object = [
             'expressions_info' => [
                 'gene_name_unique' => $gene_name_unique_expressions,
                 'tissue_unique' => $tissue_unique_expressions,
                 'cell_type_unique' => $cell_type_unique_expressions,
                 'species_unique' => $species_unique_expressions,
+                'tpm_unique' => $tpm_unique,
             ],
         ];
         return response()->json($response_object, 200);
@@ -292,12 +298,6 @@ class InitialCallController extends Controller
             ['name' => 'NEGATIVE'],
         ];
 
-        $tpm_unique = [
-            ['name' => 'Low'],
-            ['name' => 'Medium'],
-            ['name' => 'High']
-        ];
-
 
         $response_object = [
             'interactions_info' => [
@@ -309,7 +309,6 @@ class InitialCallController extends Controller
                 'gene_biotype_unique' => $gene_biotype_unique,
                 'species_unique' => $species_unique,
                 // 'sources_unique' => $sources_unique
-                'tpm_unique' => $tpm_unique,
             ]
         ];
         return response()->json($response_object, 200);

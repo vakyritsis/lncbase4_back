@@ -35,7 +35,6 @@ class InteractionController extends Controller
         $biotypesList =  $this->stringToList($biotypes);
         $speciesList =  $this->stringToList($species);
         $sourcesList =  $this->stringToList($sources);
-        $variantsList =  $this->stringToList($variants);
 
         
         $filters = [
@@ -43,14 +42,13 @@ class InteractionController extends Controller
             'gene_name' => $geneList,
             'tissue' => $tissuesList,
             'cell_type' => $cellTypesList,
-            'experiment' => $methodsList,
+            'method_name' => $methodsList,
             'type_of_interaction' => $validatedAsList,
             'type_of_experiment' => $validationTypeList,
             'mature_confidence' => $confLevelList,
             'gene_biotype' => $biotypesList,
             'species' => $speciesList,
             // 'sources' => $sourcesList,
-            // 'variants' => $variantsList
         ];
 
 
@@ -58,13 +56,23 @@ class InteractionController extends Controller
                 ->join('publications', 'norm_inter.publication_id', '=', 'publications.id')
                 ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
                 ->join('methods', 'norm_inter.method_id', '=', 'methods.id')
-                ->leftjoin('mir_info', 'norm_inter.mir_info_id', '=', 'mir_info.id');
+                ->leftjoin('mir_info', 'norm_inter.mir_info_id', '=', 'mir_info.id')
+                ->leftjoin('variations', 'norm_inter.variation_id', '=', 'variations.variation_id');
+
 
         foreach ($filters as $column => $values) {
             if (!empty($values)) {
                 $interactions = $interactions->whereIn($column, $values);
             }
         }
+        
+        if($variants == "with") {
+            $interactions = $interactions->whereNotNull('var_id');
+        }
+        else if($variants == "without") {
+            $interactions = $interactions->whereNull('var_id');
+        }
+
         $interactions = $interactions->get();
 
         $response_object = $this->groupInteractions($interactions);
@@ -105,11 +113,8 @@ class InteractionController extends Controller
         $biotypesList =  $this->stringToList($biotypes);
         $speciesList =  $this->stringToList($species);
         $sourcesList =  $this->stringToList($sources);
-        $variantsList =  $this->stringToList($variants);
 
-        
         $filters = [
-
             'tissue' => $tissuesList,
             'cell_type' => $cellTypesList,
             'method_name' => $methodsList,
@@ -119,7 +124,6 @@ class InteractionController extends Controller
             'gene_biotype' => $biotypesList,
             'species' => $speciesList,
             // 'sources' => $sourcesList,
-            // 'variants' => $variantsList
         ];
 
         $start = intval($coordStart);
@@ -130,6 +134,7 @@ class InteractionController extends Controller
                 ->join('tissues', 'norm_inter.tissue_id', '=', 'tissues.id')
                 ->join('methods', 'norm_inter.method_id', '=', 'methods.id')
                 ->join('mir_info', 'norm_inter.mir_info_id', '=', 'mir_info.id')
+                ->leftjoin('variations', 'norm_inter.variation_id', '=', 'variations.variation_id')
                 ->where('coordinates', 'like', "$chrName%")
                 ->where(function ($query) use ($start, $end) {
                     $query->whereBetween('coordinates_start', [$start, $end])
@@ -144,6 +149,13 @@ class InteractionController extends Controller
             if (!empty($values)) {
                 $interactions = $interactions->whereIn($column, $values);
             }
+        }
+
+        if($variants == "with") {
+            $interactions = $interactions->whereNotNull('var_id');
+        }
+        else if($variants == "without") {
+            $interactions = $interactions->whereNull('var_id');
         }
         $interactions = $interactions->get();
 
@@ -224,10 +236,10 @@ class InteractionController extends Controller
                 $key = $item['pmid']
                 . '_' . $item['tissue'] . '_' . $item['cell_type']. '_' . $item['category']
                 . '_' . $item['cell_line'] . '_' . $item['experimental_condition']. '_' . $item['method_name']
-
                 ;
   
                 if (!isset($groupedPublications[$key])) {
+                    
                     $groupedPublications[$key] = [
                         "author_name" => $item['author_name'],
                         "pub_year" => $item['pub_year'],
@@ -244,7 +256,9 @@ class InteractionController extends Controller
                         "experimental_condition" => $item['experimental_condition'],
                         "method_name" => $item['method_name'],
                         "key" => $key,
-                        "binding_sites" => []
+                        "binding_sites" => [],
+                        "hasVar" => false // Initialize the hasVar flag
+
                     ];
                 }
                 unset(
@@ -262,6 +276,18 @@ class InteractionController extends Controller
                     $item['cell_line'],
                     $item['experimental_condition'],
                 );
+
+                if (isset($item['variation_id'])) {
+                    $groupedPublications[$key]['hasVar'] = true; // Set hasVar to true if variation_id exists
+                    $items['hasVar'] = true;
+                }
+
+                // foreach ($groupedPublications as $publication) {
+                //     if ($publication['hasVar']) {
+                //         $items['hasVar'] = true; // Set hasVar to true at the interaction level
+                //         break; // No need to check further if we already found a variation_id
+                //     }
+                // }
                 $groupedPublications[$key]['binding_sites'][] = $item;
             }
 
